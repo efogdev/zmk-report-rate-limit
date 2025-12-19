@@ -17,12 +17,16 @@ do { \
 } while (0)
 
 static int cmd_get_set(const struct shell *sh, const size_t argc, char **argv) {
+    behavior_rate_limit_runtime_init();
+
     if (strcmp(argv[0], "get") == 0) {
         shprint(sh, "Sync window: %d msec", behavior_rate_limit_get_current_ms());
-    } else {
+    } else if (argc == 2) {
         char *endptr;
         const uint8_t parsed = strtoul(argv[1], &endptr, 10);
         behavior_rate_limit_set_current_ms(parsed);
+    } else {
+        shprint(sh, "Usage: rrl <get|set> [value]");
     }
 
     return 0;
