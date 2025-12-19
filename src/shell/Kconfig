@@ -1,0 +1,7 @@
+if SHELL
+
+config ZMK_RRL_SHELL
+bool "Report rate limiter shell commands"
+default y
+
+endif
