@@ -25,6 +25,7 @@ static int cmd_get_set(const struct shell *sh, const size_t argc, char **argv) {
         char *endptr;
         const uint8_t parsed = strtoul(argv[1], &endptr, 10);
         behavior_rate_limit_set_current_ms(parsed);
+        shprint(sh, "Done!");
     } else {
         shprint(sh, "Usage: rrl <get|set> [value]");
     }
