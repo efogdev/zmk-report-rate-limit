@@ -14,7 +14,6 @@
 LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 #if DT_HAS_COMPAT_STATUS_OKAY(DT_DRV_COMPAT)
 
-static bool initialized = false;
 static uint8_t g_dev_num = 0;
 static const char* g_devices[CONFIG_ZIP_RATE_LIMIT_MAX_DEVICES] = { NULL };
 static int g_from_settings = -1;
@@ -194,22 +193,6 @@ static void feedback_pattern_work_cb(struct k_work *work) {
     k_work_reschedule(&data->feedback_pattern_work, K_MSEC(pattern_duration));
 }
 
-void zip_rrl_sens_driver_init() {
-    if (initialized) {
-        LOG_ERR("Rate limit driver already initialized!");
-        return;
-    }
-
-    LOG_INF("Initializing rate limit driver…");
-    if (g_from_settings != -1) {
-        behavior_rate_limit_set_current_ms(g_from_settings);
-    } else {
-        LOG_WRN("Sensitivity values not found in settings");
-    }
-
-    initialized = true;
-}
-
 static int behavior_rate_limit_init(const struct device *dev) {
     const struct behavior_rate_limit_config *cfg = dev->config;
     struct behavior_rate_limit_data *data = dev->data;
@@ -276,14 +259,11 @@ static int zip_rrl_settings_load_cb(const char *name, size_t len, settings_read_
         LOG_ERR("Failed to load settings (err = %d)", err);
     }
 
-    if (initialized) {
-        behavior_rate_limit_set_current_ms(g_from_settings);
-    }
-
+    behavior_rate_limit_set_current_ms(g_from_settings);
     return err;
 }
 
-SETTINGS_STATIC_HANDLER_DEFINE(sensor_rl_cycle, ZIP_RRL_SETTINGS_PREFIX, NULL, zip_rrl_settings_load_cb, NULL, NULL);
+SETTINGS_STATIC_HANDLER_DEFINE(zip_rrl_cycle, ZIP_RRL_SETTINGS_PREFIX, NULL, zip_rrl_settings_load_cb, NULL, NULL);
 #endif
 
 #endif /* DT_HAS_COMPAT_STATUS_OKAY(DT_DRV_COMPAT) */

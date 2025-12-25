@@ -170,7 +170,6 @@ static int zip_rrl_init(const struct device *dev) {
 #endif // HAS_BLE_VIA_USB
 
     behavior_rate_limit_runtime_init();
-    zip_rrl_sens_driver_init();
     return 0;
 }
 
@@ -222,3 +221,18 @@ void behavior_rate_limit_set_current_ms(const uint8_t value) {
                           CONFIG_KERNEL_INIT_PRIORITY_DEFAULT, &sy_driver_api);
 
 DT_INST_FOREACH_STATUS_OKAY(RRL_INST)
+
+#if IS_ENABLED(CONFIG_SETTINGS)
+// ReSharper disable once CppParameterMayBeConst
+static int zip_rrl_settings_load_cb(const char *name, size_t len, settings_read_cb read_cb, void *cb_arg) {
+    const int err = read_cb(cb_arg, &g_delay, sizeof(g_delay));
+    if (err < 0) {
+        LOG_ERR("Failed to load settings (err = %d)", err);
+    }
+
+    return err;
+}
+
+SETTINGS_STATIC_HANDLER_DEFINE(zip_rrl_settings, ZIP_RRL_SETTINGS_PREFIX, NULL, zip_rrl_settings_load_cb, NULL, NULL);
+#endif
+
