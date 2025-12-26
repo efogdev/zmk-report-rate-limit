@@ -34,9 +34,10 @@
 LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
 #include <zmk/keymap.h>
-#define MAX_LEN 3
+#define MAX_LEN 4
 
 static uint8_t g_delay = CONFIG_ZMK_INPUT_PROCESSOR_REPORT_RATE_LIMIT_DEFAULT;
+static bool g_monitor = false;
 
 #if IS_ENABLED(CONFIG_SETTINGS)
 struct k_work_delayable zip_rrl_save_work;
@@ -103,6 +104,30 @@ ZMK_LISTENER(zip_rrl_profile_listener, zip_rrl_profile_listener);
 ZMK_SUBSCRIPTION(zip_rrl_profile_listener, zmk_endpoint_changed);
 #endif // HAS_BLE_VIA_USB
 
+static void monitor(const struct input_event *event) {
+    static char* name;
+    static uint8_t i = 0;
+    if (g_monitor) {
+        if (event->code == INPUT_REL_X) {
+            name = "X";
+        } else if (event->code == INPUT_REL_Y) {
+            name = "Y";
+        } else if (event->code == INPUT_REL_WHEEL) {
+            name = "SCROLL";
+        } else if (event->code == INPUT_REL_HWHEEL) {
+            name = "H_SCROLL";
+        } else {
+            name = "UNKNOWN";
+        }
+
+        printf("(%s = %d) ", name, event->value);
+        if (i++ > 4) {
+            printf("\n");
+            i = 0;
+        }
+    }
+}
+
 static int limit_val(const struct device *dev, struct input_event *event,
                      const int code_idx, const uint32_t delay_ms,
                      struct zmk_input_processor_state *state) {
@@ -115,14 +140,13 @@ static int limit_val(const struct device *dev, struct input_event *event,
     }
 
     if (now - data->last_rpt[code_idx] < delay_ms) {
-        data->rmds[code_idx] = CLAMP(data->rmds[code_idx] + event->value, INT32_MIN, INT32_MAX);
+        data->rmds[code_idx] = CLAMP(data->rmds[code_idx] + event->value, INT16_MIN, INT16_MAX);
         data->syncs[code_idx] |= event->sync;
         event->value = 0;
         event->sync = false;
         LOG_DBG("Accumulated a value, rate limited");
         return ZMK_INPUT_PROC_STOP;
     }
-
 
     event->value = CLAMP(event->value + data->rmds[code_idx], INT32_MIN, INT32_MAX);
     event->sync |= data->syncs[code_idx];
@@ -131,6 +155,7 @@ static int limit_val(const struct device *dev, struct input_event *event,
     data->syncs[code_idx] = false;
     data->last_rpt[code_idx] = now;
 
+    monitor(event);
     return ZMK_INPUT_PROC_CONTINUE;
 }
 
@@ -140,6 +165,7 @@ static int zip_rrl_handle_event(const struct device *dev, struct input_event *ev
 #if HAS_BLE_VIA_USB
     const struct zip_rrl_data *data = dev->data;
     if (!data->active) {
+        monitor(event);
         return ZMK_INPUT_PROC_CONTINUE;
     }
 #endif // HAS_BLE_VIA_USB
@@ -206,6 +232,10 @@ void behavior_rate_limit_set_current_ms(const uint8_t value) {
 #endif
 }
 
+void rrl_monitoring_set(const bool enabled) {
+    g_monitor = enabled;
+}
+
 #define RRL_INST(n)                                                                            \
     BUILD_ASSERT(DT_INST_PROP_LEN(n, codes)                                                    \
                  <= MAX_LEN,                \
@@ -220,6 +250,7 @@ void behavior_rate_limit_set_current_ms(const uint8_t value) {
     DEVICE_DT_INST_DEFINE(n, &zip_rrl_init, NULL, &data_##n, &config_##n, POST_KERNEL,         \
                           CONFIG_KERNEL_INIT_PRIORITY_DEFAULT, &sy_driver_api);
 
+// ToDo refactor to ACTUALLY support multiple instances?
 DT_INST_FOREACH_STATUS_OKAY(RRL_INST)
 
 #if IS_ENABLED(CONFIG_SETTINGS)

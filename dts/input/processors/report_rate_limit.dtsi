@@ -5,14 +5,14 @@
         compatible = "zmk,input-processor-report-rate-limit";
         #input-processor-cells = <0>;
         type = <INPUT_EV_REL>;
-        codes = <INPUT_REL_X INPUT_REL_Y>;
+        codes = <INPUT_REL_X INPUT_REL_Y INPUT_REL_WHEEL INPUT_REL_HWHEEL>;
     };
 
     /omit-if-no-ref/ zip_ble_report_rate_limit: zip_ble_report_rate_limit {
         compatible = "zmk,input-processor-report-rate-limit";
         #input-processor-cells = <0>;
         type = <INPUT_EV_REL>;
-        codes = <INPUT_REL_X INPUT_REL_Y>;
+        codes = <INPUT_REL_X INPUT_REL_Y INPUT_REL_WHEEL INPUT_REL_HWHEEL>;
         limit-ble-only;
     };
 };
