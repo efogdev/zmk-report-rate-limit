@@ -4,4 +4,4 @@
 void behavior_rate_limit_runtime_init();
 uint8_t behavior_rate_limit_get_current_ms();
 void behavior_rate_limit_set_current_ms(uint8_t value);
-void rrl_monitoring_set(bool enabled);
+void rrl_monitoring_set(bool enabled, bool abs);

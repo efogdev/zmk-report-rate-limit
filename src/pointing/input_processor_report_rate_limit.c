@@ -37,7 +37,7 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 #define MAX_LEN 4
 
 static uint8_t g_delay = CONFIG_ZMK_INPUT_PROCESSOR_REPORT_RATE_LIMIT_DEFAULT;
-static bool g_monitor = false;
+static bool g_monitor = false, g_abs = false;
 
 #if IS_ENABLED(CONFIG_SETTINGS)
 struct k_work_delayable zip_rrl_save_work;
@@ -120,7 +120,7 @@ static void monitor(const struct input_event *event) {
             name = "UNKNOWN";
         }
 
-        printf("(%s = %d) ", name, event->value);
+        printf("(%s = %d) ", name, g_abs ? abs(event->value) : event->value);
         if (i++ > 4) {
             printf("\n");
             i = 0;
@@ -232,8 +232,11 @@ void behavior_rate_limit_set_current_ms(const uint8_t value) {
 #endif
 }
 
-void rrl_monitoring_set(const bool enabled) {
+void rrl_monitoring_set(const bool enabled, const bool abs) {
     g_monitor = enabled;
+    if (g_monitor) {
+        g_abs = abs;
+    }
 }
 
 #define RRL_INST(n)                                                                            \

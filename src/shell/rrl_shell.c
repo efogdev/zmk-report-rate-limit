@@ -35,16 +35,21 @@ static int cmd_get_set(const struct shell *sh, const size_t argc, char **argv) {
 
 static int cmd_monitor(const struct shell *sh, const size_t argc, char **argv) {
     if (argc < 2) {
-        shprint(sh, "Usage: rrl monitor <on|off>");
+        shprint(sh, "Usage: rrl monitor <on|off> [--abs]");
         return -EINVAL;
     }
 
     if (strcmp(argv[1], "on") == 0) {
-        rrl_monitoring_set(true);
+        bool abs = false;
+        if (argc == 3 && strcmp(argv[2], "--abs") == 0) {
+            abs = true;
+        }
+
+        rrl_monitoring_set(true, abs);
     } else if (strcmp(argv[1], "off") == 0) {
-        rrl_monitoring_set(false);
+        rrl_monitoring_set(false, false);
     } else {
-        shprint(sh, "Usage: rrl monitor <on|off>");
+        shprint(sh, "Usage: rrl monitor <on|off> [--abs]");
         return -EINVAL;
     }
 
