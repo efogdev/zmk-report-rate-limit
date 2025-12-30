@@ -104,24 +104,30 @@ ZMK_LISTENER(zip_rrl_profile_listener, zip_rrl_profile_listener);
 ZMK_SUBSCRIPTION(zip_rrl_profile_listener, zmk_endpoint_changed);
 #endif // HAS_BLE_VIA_USB
 
-static void monitor(const struct input_event *event) {
-    static char* name;
+static const char* x_name = "X";
+static const char* y_name = "Y";
+static const char* scrl_name = "SCROLL";
+static const char* h_scrl_name = "H_SCROLL";
+static const char* ub_name = "UNKNOWN";
+
+static inline void monitor(const struct input_event *event) {
+    static const char* name;
     static uint8_t i = 0;
     if (g_monitor) {
         if (event->code == INPUT_REL_X) {
-            name = "X";
+            name = x_name;
         } else if (event->code == INPUT_REL_Y) {
-            name = "Y";
+            name = y_name;
         } else if (event->code == INPUT_REL_WHEEL) {
-            name = "SCROLL";
+            name = scrl_name;
         } else if (event->code == INPUT_REL_HWHEEL) {
-            name = "H_SCROLL";
+            name = h_scrl_name;
         } else {
-            name = "UNKNOWN";
+            name = ub_name;
         }
 
         printf("(%s = %d) ", name, g_abs ? abs(event->value) : event->value);
-        if (i++ > 4) {
+        if (i++ >= 3) {
             printf("\n");
             i = 0;
         }
