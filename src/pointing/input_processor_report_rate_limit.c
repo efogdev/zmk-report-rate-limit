@@ -140,6 +140,12 @@ static int limit_val(const struct device *dev, struct input_event *event,
     struct zip_rrl_data *data = dev->data;
     const int64_t now = k_uptime_get();
 
+#if CONFIG_ZIP_RRL_MONITOR_AUTO_OFF_MSEC > 0
+    if (g_monitor && now - data->last_rpt[code_idx] > CONFIG_ZIP_RRL_MONITOR_AUTO_OFF_MSEC) {
+        g_monitor = false;
+    }
+#endif
+
     if (now - data->last_rpt[code_idx] >= delay_ms * MAX_LEN) {
         data->rmds[code_idx] = 0;
         data->syncs[code_idx] = false;
