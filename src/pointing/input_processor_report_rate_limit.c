@@ -31,6 +31,12 @@
 
 #include <zephyr/logging/log.h>
 
+#if IS_ENABLED(CONFIG_ZMK_RUNTIME_CONFIG)
+#include <zmk_runtime_config/runtime_config.h>
+#else
+#define ZRC_GET(key, default_val) (default_val)
+#endif
+
 LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
 #include <zmk/keymap.h>
@@ -140,11 +146,10 @@ static int limit_val(const struct device *dev, struct input_event *event,
     struct zip_rrl_data *data = dev->data;
     const int64_t now = k_uptime_get();
 
-#if CONFIG_ZIP_RRL_MONITOR_AUTO_OFF_MSEC > 0
-    if (g_monitor && now - data->last_rpt[code_idx] > CONFIG_ZIP_RRL_MONITOR_AUTO_OFF_MSEC) {
+    const int32_t auto_off_ms = ZRC_GET("rrl/auto_off_ms", CONFIG_ZIP_RRL_MONITOR_AUTO_OFF_MSEC);
+    if (auto_off_ms > 0 && g_monitor && now - data->last_rpt[code_idx] > auto_off_ms) {
         g_monitor = false;
     }
-#endif
 
     if (now - data->last_rpt[code_idx] >= delay_ms * MAX_LEN) {
         data->rmds[code_idx] = 0;
@@ -267,6 +272,14 @@ void rrl_monitoring_set(const bool enabled, const bool abs) {
 
 // ToDo refactor to ACTUALLY support multiple instances?
 DT_INST_FOREACH_STATUS_OKAY(RRL_INST)
+
+#if IS_ENABLED(CONFIG_ZMK_RUNTIME_CONFIG)
+static int zip_rrl_register_runtime_params(void) {
+    zrc_register("rrl/auto_off_ms", CONFIG_ZIP_RRL_MONITOR_AUTO_OFF_MSEC, 0, 3600000);
+    return 0;
+}
+SYS_INIT(zip_rrl_register_runtime_params, POST_KERNEL, CONFIG_KERNEL_INIT_PRIORITY_DEVICE);
+#endif /* CONFIG_ZMK_RUNTIME_CONFIG */
 
 #if IS_ENABLED(CONFIG_SETTINGS)
 // ReSharper disable once CppParameterMayBeConst
