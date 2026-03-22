@@ -95,7 +95,7 @@ static const struct device *zip_rrl_devs[] = {
 static int zip_rrl_profile_listener(const zmk_event_t *eh) {
     const struct zmk_endpoint_changed *ep_changed = as_zmk_endpoint_changed(eh);
     if (ep_changed) {
-        const struct zmk_endpoint_instance ep = zmk_endpoints_selected();
+        const struct zmk_endpoint_instance ep = zmk_endpoint_get_selected();
         for (size_t i = 0; i < ARRAY_SIZE(zip_rrl_devs); i++) {
             const struct zip_rrl_config *cfg = zip_rrl_devs[i]->config;
             if (cfg->limit_ble_only) {
