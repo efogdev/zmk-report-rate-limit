@@ -117,7 +117,7 @@ static const char* h_scrl_name = "H_SCROLL";
 static const char* ub_name = "UNKNOWN";
 
 static inline void monitor(const struct input_event *event) {
-    static const char* name;
+    const char* name;
     static uint8_t i = 0;
     if (g_monitor) {
         if (event->code == INPUT_REL_X) {
