@@ -117,9 +117,9 @@ static const char* h_scrl_name = "H_SCROLL";
 static const char* ub_name = "UNKNOWN";
 
 static inline void monitor(const struct input_event *event) {
-    const char* name;
     static uint8_t i = 0;
     if (g_monitor) {
+        const char* name;
         if (event->code == INPUT_REL_X) {
             name = x_name;
         } else if (event->code == INPUT_REL_Y) {
@@ -159,8 +159,11 @@ static int limit_val(const struct device *dev, struct input_event *event,
     if (now - data->last_rpt[code_idx] < delay_ms) {
         data->rmds[code_idx] = CLAMP(data->rmds[code_idx] + event->value, INT16_MIN, INT16_MAX);
         data->syncs[code_idx] |= event->sync;
+
+        monitor(event);
         event->value = 0;
         event->sync = false;
+
         LOG_DBG("Accumulated a value, rate limited");
         return ZMK_INPUT_PROC_STOP;
     }
@@ -172,7 +175,6 @@ static int limit_val(const struct device *dev, struct input_event *event,
     data->syncs[code_idx] = false;
     data->last_rpt[code_idx] = now;
 
-    monitor(event);
     return ZMK_INPUT_PROC_CONTINUE;
 }
 
