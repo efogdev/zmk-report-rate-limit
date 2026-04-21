@@ -1,4 +1,3 @@
-#include <stdlib.h>
 #include <zephyr/kernel.h>
 #include <zephyr/device.h>
 #include <zephyr/shell/shell.h>
@@ -33,34 +32,9 @@ static int cmd_get_set(const struct shell *sh, const size_t argc, char **argv) {
     return 0;
 }
 
-static int cmd_monitor(const struct shell *sh, const size_t argc, char **argv) {
-    if (argc < 2) {
-        shprint(sh, "Usage: rrl monitor <on|off> [--abs]");
-        return -EINVAL;
-    }
-
-    if (strcmp(argv[1], "on") == 0) {
-        bool abs = false;
-        if (argc == 3 && strcmp(argv[2], "--abs") == 0) {
-            abs = true;
-        }
-
-        rrl_monitoring_set(true, abs);
-    } else if (strcmp(argv[1], "off") == 0) {
-        rrl_monitoring_set(false, false);
-    } else {
-        shprint(sh, "Usage: rrl monitor <on|off> [--abs]");
-        return -EINVAL;
-    }
-
-    shprint(sh, "Done.");
-    return 0;
-}
-
 SHELL_STATIC_SUBCMD_SET_CREATE(sub_rrl,
     SHELL_CMD(get, NULL, "Get current report rate limit", cmd_get_set),
     SHELL_CMD(set, NULL, "Set report rate sync window", cmd_get_set),
-    SHELL_CMD(monitor, NULL, "Monitor raw output values", cmd_monitor),
     SHELL_SUBCMD_SET_END
 );
 

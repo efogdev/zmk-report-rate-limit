@@ -6,7 +6,6 @@
 
 #define DT_DRV_COMPAT zmk_input_processor_report_rate_limit
 
-#include <stdlib.h>
 #include <zephyr/kernel.h>
 #include <zephyr/device.h>
 #include <drivers/input_processor.h>
@@ -31,19 +30,11 @@
 
 #include <zephyr/logging/log.h>
 
-#if IS_ENABLED(CONFIG_ZMK_RUNTIME_CONFIG)
-#include <zmk_runtime_config/runtime_config.h>
-#else
-#define ZRC_GET(key, default_val) (default_val)
-#endif
-
 LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
-#include <zmk/keymap.h>
 #define MAX_LEN 4
 
 static uint8_t g_delay = CONFIG_ZMK_INPUT_PROCESSOR_REPORT_RATE_LIMIT_DEFAULT;
-static bool g_monitor = false, g_abs = false;
 
 #if IS_ENABLED(CONFIG_SETTINGS)
 struct k_work_delayable zip_rrl_save_work;
@@ -110,46 +101,12 @@ ZMK_LISTENER(zip_rrl_profile_listener, zip_rrl_profile_listener);
 ZMK_SUBSCRIPTION(zip_rrl_profile_listener, zmk_endpoint_changed);
 #endif // HAS_BLE_VIA_USB
 
-static const char* x_name = "X";
-static const char* y_name = "Y";
-static const char* scrl_name = "SCROLL";
-static const char* h_scrl_name = "H_SCROLL";
-static const char* ub_name = "UNKNOWN";
-
-static inline void monitor(const struct input_event *event) {
-    static uint8_t i = 0;
-    if (g_monitor) {
-        const char* name;
-        if (event->code == INPUT_REL_X) {
-            name = x_name;
-        } else if (event->code == INPUT_REL_Y) {
-            name = y_name;
-        } else if (event->code == INPUT_REL_WHEEL) {
-            name = scrl_name;
-        } else if (event->code == INPUT_REL_HWHEEL) {
-            name = h_scrl_name;
-        } else {
-            name = ub_name;
-        }
-
-        printf("(%s = %d) ", name, g_abs ? abs(event->value) : event->value);
-        if (i++ >= 3) {
-            printf("\n");
-            i = 0;
-        }
-    }
-}
 
 static int limit_val(const struct device *dev, struct input_event *event,
                      const int code_idx, const uint32_t delay_ms,
                      struct zmk_input_processor_state *state) {
     struct zip_rrl_data *data = dev->data;
     const int64_t now = k_uptime_get();
-
-    const int32_t auto_off_ms = ZRC_GET("rrl/auto_off_ms", CONFIG_ZIP_RRL_MONITOR_AUTO_OFF_MSEC);
-    if (auto_off_ms > 0 && g_monitor && now - data->last_rpt[code_idx] > auto_off_ms) {
-        g_monitor = false;
-    }
 
     if (now - data->last_rpt[code_idx] >= delay_ms * MAX_LEN) {
         data->rmds[code_idx] = 0;
@@ -160,7 +117,6 @@ static int limit_val(const struct device *dev, struct input_event *event,
         data->rmds[code_idx] = CLAMP(data->rmds[code_idx] + event->value, INT16_MIN, INT16_MAX);
         data->syncs[code_idx] |= event->sync;
 
-        monitor(event);
         event->value = 0;
         event->sync = false;
 
@@ -184,7 +140,6 @@ static int zip_rrl_handle_event(const struct device *dev, struct input_event *ev
 #if HAS_BLE_VIA_USB
     const struct zip_rrl_data *data = dev->data;
     if (!data->active) {
-        monitor(event);
         return ZMK_INPUT_PROC_CONTINUE;
     }
 #endif // HAS_BLE_VIA_USB
@@ -251,13 +206,6 @@ void behavior_rate_limit_set_current_ms(const uint8_t value) {
 #endif
 }
 
-void rrl_monitoring_set(const bool enabled, const bool abs) {
-    g_monitor = enabled;
-    if (g_monitor) {
-        g_abs = abs;
-    }
-}
-
 #define RRL_INST(n)                                                                            \
     BUILD_ASSERT(DT_INST_PROP_LEN(n, codes)                                                    \
                  <= MAX_LEN,                \
@@ -275,13 +223,6 @@ void rrl_monitoring_set(const bool enabled, const bool abs) {
 // ToDo refactor to ACTUALLY support multiple instances?
 DT_INST_FOREACH_STATUS_OKAY(RRL_INST)
 
-#if IS_ENABLED(CONFIG_ZMK_RUNTIME_CONFIG)
-static int zip_rrl_register_runtime_params(void) {
-    zrc_register("rrl/auto_off_ms", CONFIG_ZIP_RRL_MONITOR_AUTO_OFF_MSEC, 0, 3600000);
-    return 0;
-}
-SYS_INIT(zip_rrl_register_runtime_params, POST_KERNEL, CONFIG_KERNEL_INIT_PRIORITY_DEVICE);
-#endif /* CONFIG_ZMK_RUNTIME_CONFIG */
 
 #if IS_ENABLED(CONFIG_SETTINGS)
 // ReSharper disable once CppParameterMayBeConst

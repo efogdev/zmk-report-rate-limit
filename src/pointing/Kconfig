@@ -15,8 +15,4 @@ config ZIP_RRL_SETTINGS_SAVE_DELAY
 int "Settings save debounce, msec"
 default 2500
 
-config ZIP_RRL_MONITOR_AUTO_OFF_MSEC
-int "Turn off monitor after no pointer events for N msec"
-default 90000
-
 endif
