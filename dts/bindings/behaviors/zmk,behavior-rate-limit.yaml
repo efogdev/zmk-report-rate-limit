@@ -6,10 +6,6 @@ properties:
   values-ms:
     type: array
     required: true
-  feedback-gpios:
-    type: phandle-array
-  feedback-extra-gpios:
-    type: phandle-array
   feedback-wrap-pattern:
     type: array
   feedback-duration:
